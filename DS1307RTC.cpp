@@ -10,26 +10,32 @@
 
 //CAI DAT THOI GIAN
 tmElements_t tm;
-void SetRTC(int hour, int minute, int second, int day, int month, int year){
-  tm.Hour   =  hour;
-  tm.Minute =  minute;
-  tm.Second =  second;
-  tm.Day    =  day;
-  tm.Month  =  month;
-  tm.Year   =  year;
+void SetRTC(uint8_t _hour, uint8_t _minute, uint8_t _second, uint8_t _wday, uint8_t _day, uint8_t _month, uint8_t _year){
+  tm.Hour   =  _hour;
+  tm.Minute =  _minute;
+  tm.Second =  _second;
+  tm.Wday   =  _wday;
+  tm.Day    =  _day;
+  tm.Month  =  _month;
+  tm.Year   =  _year;
   RTC.write(tm);
 }
 //DOC THOI GIAN
 //ReadTime
 bool ReadRTC(void){
   if(RTC.read(tm)){
+  tm.Hour   =  tm.Hour&0x7F;
+  tm.Minute =  tm.Minute&0x7F;
+  tm.Second =  tm.Second&0x3F;
+  tm.Day    =  tm.Day&0x07;
+  tm.Month  =  tm.Month&0x1F;
+  tm.Year   =  tm.Year&0xFF;
    return true;
   }
   else{
     return false; 
   }
 }
-
 //****************************************************************************************************************
 DS1307RTC::DS1307RTC()
 {

@@ -12,22 +12,19 @@ SoftwareSerial bluetooth(BLUETOOTH_TX, BLUETOOTH_RX);
 
 char stringData[18];
 bool have_data;
-
+unsigned char ucUART4BufferBlRx[64];
 //Config BLUTOOTH 
 void vConfigBlutooth(unsigned long BAUD_RATE){
   bluetooth.begin(BAUD_RATE);
 }
 //read data from BLUTOOTH
 void vReadDataBlutooth(void){
- if(bluetooth.available()){
+  if(bluetooth.available()){
    delay(50);
-   for (int i=0; i<18; i++){
-    if(strstr((char *)g_ui8BuffRead, "TITLE") != NULL){
-        
-    }
-    stringData[i] = bluetooth.read();
+   byte i=0;
+   while(bluetooth.available()){
+    ucUART4BufferBlRx[i++] = bluetooth.read();
    }
-   have_data = 1;
-   while(bluetooth.available()){bluetooth.read();}
+   have_data=1;
   } 
- }
+}

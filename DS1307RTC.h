@@ -8,7 +8,7 @@
 
 #include "TimeLib.h"
 
-void SetRTC(int hour, int minute, int second, int day, int month, int year);
+void SetRTC(uint8_t _hour, uint8_t _minute, uint8_t _second, uint8_t _wday, uint8_t _day, uint8_t _month, uint8_t _year);
 bool ReadRTC(void);
 
 // library interface description
