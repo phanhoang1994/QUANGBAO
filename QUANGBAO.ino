@@ -3,15 +3,47 @@
 #include "TimeLib.h"
 #include "DS1307RTC.h"
 #include "Blutooth.h"
+//matrix
+#include <SPI.h>
+#include <MD_Parola.h>
+#include <MD_MAX72xx.h>
+#include "Font_Data.h"
+
+#define HARDWARE_TYPE MD_MAX72XX::FC16_HW
+#define CLK_PIN   13
+#define DATA_PIN  11
+#define CS_PIN    10
+
+// HARDWARE SPI
+MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, 16);
+// SOFTWARE SPI
+//MD_Parola P = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
+char szTime[6]; //mm:ss\0
+char szArrow[2];
 
 bool b_gSetTime;
 unsigned long preMillis;
+unsigned long preMillis1;
 extern tmElements_t tm;
 
 void setup() {
   Serial.begin(9600);
   vConfigBlutooth(9600);
   delay(200);
+  //matrix
+  P.begin(4);
+  P.setZone(0, 2, 7); //zone low for quang bao and time
+  P.setZone(1, 10, 15);//zone high for quang qao and time
+  P.setZone(2, 0, 1); //zone low for arrow
+  P.setZone(3, 8, 9);//zone high for arrow
+      P.setFont(0, BigFontLower);
+      P.setFont(1, BigFontUpper);
+      P.setFont(2, BigFontLower);
+      P.setFont(3, BigFontUpper);
+  P.displayZoneText(0,szTime, PA_LEFT, SPEED_TIME, PAUSE_TIME, PA_PRINT,PA_NO_EFFECT);
+  P.displayZoneText(1,szTime, PA_LEFT, SPEED_TIME, PAUSE_TIME, PA_PRINT,PA_NO_EFFECT);
+  P.displayZoneText(2,szArrow, PA_CENTER, SPEED_TIME, PAUSE_TIME, PA_PRINT,PA_NO_EFFECT);
+  P.displayZoneText(3,szArrow, PA_CENTER, SPEED_TIME, PAUSE_TIME, PA_PRINT,PA_NO_EFFECT);
 }
 
 void loop() {
@@ -20,32 +52,45 @@ void loop() {
   byte _upHour,_upMinute,_upSecond,_upWday,_upDay,_upMonth,_upYear; 
   String str = "";
   char *p;
-
+  //Matrix 16x16
+  P.displayAnimate();
+  P.displayReset(0);
+  P.displayReset(1);
+  P.displayReset(2);
+  P.displayReset(3);
+  /*if (P.getZoneStatus(3)){
+    P.setTextEffect(3, PA_SCROLL_UP, PA_SCROLL_UP);
+    P.displayReset(3);
+  }
+  if (P.getZoneStatus(2)){
+    P.setTextEffect(2, PA_SCROLL_UP, PA_SCROLL_UP);
+    P.displayReset(2);
+  }*/
   //Update TimeData-----------
   //Format:"TIME:hhmmss/DATE:tddmmyy" 24byte 
   //01-23-45-6-78-910-1112
   //hh-mm-ss-t-dd-mm-yy
-  if(strstr((char *)ucUART4BufferBlRx, "TIME:") != NULL){
+  if(strstr((char *)ucUART4BufferBlRx, "TIME") != NULL){
    //hh
-   BuffUpdateTime[0]=ucUART4BufferBlRx[5]-48;
-   BuffUpdateTime[1]=ucUART4BufferBlRx[6]-48;
+   BuffUpdateTime[0]=ucUART4BufferBlRx[4]-48;
+   BuffUpdateTime[1]=ucUART4BufferBlRx[5]-48;
    //mm
-   BuffUpdateTime[2]=ucUART4BufferBlRx[7]-48;
-   BuffUpdateTime[3]=ucUART4BufferBlRx[8]-48;
+   BuffUpdateTime[2]=ucUART4BufferBlRx[6]-48;
+   BuffUpdateTime[3]=ucUART4BufferBlRx[7]-48;
    //ss
-   BuffUpdateTime[4]=ucUART4BufferBlRx[9]-48;
-   BuffUpdateTime[5]=ucUART4BufferBlRx[10]-48;
+   BuffUpdateTime[4]=ucUART4BufferBlRx[8]-48;
+   BuffUpdateTime[5]=ucUART4BufferBlRx[9]-48;
    //t
-   BuffUpdateTime[6]=ucUART4BufferBlRx[17]-48;
+   BuffUpdateTime[6]=ucUART4BufferBlRx[10]-48;
    //dd
-   BuffUpdateTime[7]=ucUART4BufferBlRx[18]-48;
-   BuffUpdateTime[8]=ucUART4BufferBlRx[19]-48;
+   BuffUpdateTime[7]=ucUART4BufferBlRx[11]-48;
+   BuffUpdateTime[8]=ucUART4BufferBlRx[12]-48;
    //mm
-   BuffUpdateTime[9]=ucUART4BufferBlRx[20]-48;
-   BuffUpdateTime[10]=ucUART4BufferBlRx[21]-48;
+   BuffUpdateTime[9]=ucUART4BufferBlRx[13]-48;
+   BuffUpdateTime[10]=ucUART4BufferBlRx[14]-48;
    //yy
-   BuffUpdateTime[11]=ucUART4BufferBlRx[22]-48;
-   BuffUpdateTime[12]=ucUART4BufferBlRx[23]-48;
+   BuffUpdateTime[11]=ucUART4BufferBlRx[15]-48;
+   BuffUpdateTime[12]=ucUART4BufferBlRx[16]-48;
     /*decode*/
     _upHour   =  BuffUpdateTime[0]*10 + BuffUpdateTime[1];
     _upMinute =  BuffUpdateTime[2]*10 + BuffUpdateTime[3];
@@ -54,15 +99,6 @@ void loop() {
     _upDay    =  BuffUpdateTime[7]*10 + BuffUpdateTime[8];
     _upMonth  =  BuffUpdateTime[9]*10 + BuffUpdateTime[10];
     _upYear   =  BuffUpdateTime[11]*10 + BuffUpdateTime[12];
-    Serial.println("decode");
-    Serial.print(_upHour);Serial.print('-');
-    Serial.print(_upMinute);Serial.print('-');
-    Serial.print(_upSecond);Serial.print('-');
-    Serial.print(_upWday);Serial.print('-');
-    Serial.print(_upDay);Serial.print('/');
-    Serial.print(_upMonth);Serial.print('/');
-    Serial.print(_upYear);Serial.print('/');
-    Serial.println("end");
     /*end decode*/
      b_gSetTime=1;
      for(i=0;i<64;i++){ucUART4BufferBlRx[i]=0;}
@@ -77,13 +113,15 @@ void loop() {
   if(millis() - preMillis>1000){
    ReadRTC();
    preMillis = millis();
-   //debug time
-   Serial.print(tm.Hour);
-   Serial.write(':');
-   Serial.print(tm.Minute);
-   Serial.write(':'); 
-   Serial.print(tm.Second);
-   Serial.println();
+   szTime[0]=tm.Hour/10+48;
+   szTime[1]=tm.Hour%10+48;
+   szTime[3]=tm.Minute/10+48;
+   szTime[4]=tm.Minute%10+48;
+   if(millis() - preMillis1>1000){szTime[2]=':';}
+   if(millis() - preMillis1>2000){szTime[2]=' ';preMillis1=millis();}
+   szTime[5]='\0';
+   szArrow[0]=94;
+   szArrow[1]='\0';
   }
   //Blutooth
   vReadDataBlutooth();
