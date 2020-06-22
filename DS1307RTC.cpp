@@ -24,12 +24,6 @@ void SetRTC(uint8_t _hour, uint8_t _minute, uint8_t _second, uint8_t _wday, uint
 //ReadTime
 bool ReadRTC(void){
   if(RTC.read(tm)){
-  tm.Hour   =  tm.Hour&0x7F;
-  tm.Minute =  tm.Minute&0x7F;
-  tm.Second =  tm.Second&0x3F;
-  tm.Day    =  tm.Day&0x07;
-  tm.Month  =  tm.Month&0x1F;
-  tm.Year   =  tm.Year&0xFF;
    return true;
   }
   else{
@@ -73,10 +67,10 @@ bool DS1307RTC::read(tmElements_t &tm)
   if (Wire.available() < tmNbrFields) return false;
   sec = Wire.read();
   tm.Second = bcd2dec(sec & 0x7f);   
-  tm.Minute = bcd2dec(Wire.read() );
+  tm.Minute = bcd2dec(Wire.read() & 0x7f );
   tm.Hour =   bcd2dec(Wire.read() & 0x3f);  // mask assumes 24hr clock
-  tm.Wday = bcd2dec(Wire.read() );
-  tm.Day = bcd2dec(Wire.read() );
+  tm.Wday = bcd2dec(Wire.read()& 0x07 );
+  tm.Day = bcd2dec(Wire.read() &0x1f);
   tm.Month = bcd2dec(Wire.read() );
   tm.Year = y2kYearToTm((bcd2dec(Wire.read())));
   if (sec & 0x80) return false; // clock is halted
@@ -112,7 +106,7 @@ bool DS1307RTC::write(tmElements_t &tm)
   return true;
 }
 
-unsigned char DS1307RTC::isRunning()
+/*unsigned char DS1307RTC::isRunning()
 {
   Wire.beginTransmission(DS1307_CTRL_ID);
   Wire.write((uint8_t)0x00); 
@@ -142,7 +136,7 @@ char DS1307RTC::getCalibration()
   char out = calReg & 0x1f;
   if (!(calReg & 0x20)) out = -out; // S bit clear means a negative value
   return out;
-}
+}*/
 
 // PRIVATE FUNCTIONS
 

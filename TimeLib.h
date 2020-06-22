@@ -3,9 +3,9 @@
  6/2020
 */     
 
-#ifndef _Time_h
+#ifndef __TIMELIB_H
 #ifdef __cplusplus
-#define _Time_h
+#define __TIMELIB_H
 
 #include <inttypes.h>
 #ifndef __AVR__
